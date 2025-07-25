@@ -1,5 +1,6 @@
 ### Disclaimer
 
+yes this is REAL MALWARE and very destructive IF YOU RUN THIS AS A JOKE you are a FEDERAL CRIMINAL
 This project is intended solely for **educational and research purposes**. It is designed to demonstrate common techniques used in malware development and analysis in a **controlled, ethical environment**.
 
 ---
