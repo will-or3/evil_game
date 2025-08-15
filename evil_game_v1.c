@@ -53,7 +53,7 @@ void safe() {
 
 //1. list all disks -> ld.txt
 //2. parce disk nums > lo.txt
-//3. clear all attriebutes so i can kill read-only files > cl.txt
+//3. clear all attriebutes so i can touch read-only files > cl.txt
 //4. exec diskpart with cmnds
 //5. rm temp files
 
