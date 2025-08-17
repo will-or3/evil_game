@@ -14,3 +14,7 @@ This project is intended solely for **educational and research purposes**. It is
 ---
 
 By accessing or using this code, you acknowledge that you understand the risks and agree to use it **responsibly and lawfully**.
+
+### Resources
+https://learn.microsoft.com/en-us/windows/win32/apiindex/windows-api-list
+https://learn.microsoft.com/en-us/windows/win32/apiindex/windows-api-list#data-access-and-storage
