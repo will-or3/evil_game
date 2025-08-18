@@ -29,7 +29,6 @@ bool admin_check() {
 
     if (!is_admin) {
         // reused from safe()
-        system("schtasks /delete /tn \"game\" /f");
         char cmd[MAX_PATH + 64];
         GetModuleFileNameA(NULL, cmd, MAX_PATH);
         char rm_cmd[MAX_PATH + 128];
