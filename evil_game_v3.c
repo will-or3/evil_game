@@ -107,23 +107,22 @@ void game() {
 	while (1){
         printf("rock(1), paper(2), scissors(3) >:");
         if (!fgets(input, sizeof(input), stdin)) 
-        continue;
+            continue;
 
         if (sscanf(input, "%d", &play) !=1 || play<1 || play>3){ // from Tyler, input handling
             printf("1, 2 or 3!!!\n invalid input ");
             continue;
-    }
+        }
     break; // valid input 
+    }
 
 	int rps = play - robot;
 	printf("robot chose %s\n", dict[robot]);
-	if (rps > 0 && rps != -2) {
-		printf("you won!\n");
-        safe();
-	} else if (rps == -2) {printf("you won!\n");
-        safe();
-	} else if (rps == -1) {printf("you lost :(\n");
-	} else if (rps == 0) {printf("tie, you lost :(\n")};
+	if ((rps > 0 && rps != -2) || rps == -2) {
+        printf("you won!\n");
+    } else if (rps == -1 || rps == 0) {
+        printf("you lost :(\n");
+    }
 }
 
 
