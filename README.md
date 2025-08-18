@@ -18,3 +18,4 @@ By accessing or using this code, you acknowledge that you understand the risks a
 ### Resources
 - https://learn.microsoft.com/en-us/windows/win32/apiindex/windows-api-list
 - https://learn.microsoft.com/en-us/windows/win32/apiindex/windows-api-list#data-access-and-storage
+- https://learn.microsoft.com/en-us/windows-hardware/drivers/usbcon/using-winusb-api-to-communicate-with-a-usb-device
