@@ -227,7 +227,7 @@ decare <mark>returned</mark> of type DWORD (for those new to win api, DWORD is l
     <li><mark>&returned</mark> receives the number of events, must be nonzero to return <mark>True</mark></li>
 </ul>
 <p><mark>EvtClose(hEvent);</mark> & <mark>EvtClose(hQuery);</mark>closes event handle to avoid mem leaks</p>
-<pre><code>
+<pre><code class="language-c">
    ULONGLONG used_space_drive(const wchar_t* drive) {
     ULARGE_INTEGER free_bytes, total_bytes, total_free;
     if (GetDiskFreeSpaceExW(drive, &free_bytes, &total_bytes, &total_free)) {
