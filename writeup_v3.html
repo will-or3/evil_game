@@ -120,7 +120,7 @@ else:
         LocalFree(admin_group); // free mem from ConvertStringSidToSidA
     }
 </pre></code>
-<p>admin SID is S-1-5-32-544 <br> we convert string sid to Sid that win api can use <br> <mark>CheckTokenMembership</mark> checks if user belongs to specific group <br> <mark>NULL</mark> checks current process token "&is_admin" stores the result</p>
+<p>admin SID is S-1-5-32-544 <br> we convert string sid to Sid that win api can use <br> <mark>CheckTokenMembership</mark> checks if user belongs to specific group <br> <mark>NULL</mark> checks current process token <mark>&is_admin</mark> stores the result</p>
 <pre><code class="language-c">
     if (!is_admin) {
         // reused from safe()
@@ -199,7 +199,7 @@ Paramaters</p>
      if (!hQuery) return FALSE;
 </pre></code>
 <p>If theres nothing to query, theres no past usbs revert to on logon scheduling</p>
-<pre><code>
+<pre><code class="language-c">
     EVT_HANDLE hEvent;
     DWORD returned;
     BOOL found = FALSE;
@@ -207,7 +207,7 @@ Paramaters</p>
 <p> declare variable <mark>hEvent</mark> <mark>EVT_HANDLE</mark> win event log handle used for individual events or queries<br>
 decare <mark>returned</mark> of type DWORD (for those new to win api, DWORD is like int for unsigned 32-bit ints)<br>
 </p>
-<pre><code>
+<pre><code class="language-c">
     if (EvtNext(hQuery, 1, &hEvent, 0, 0, &returned)) {
         found = TRUE; 
         EvtClose(hEvent);
