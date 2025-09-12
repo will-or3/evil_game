@@ -1,4 +1,4 @@
-### note*
+### Note*
 the following is strictly conceptual, the code was never intended to be compile, compilation requires specialized enviroment
 
 ---
