@@ -1,3 +1,4 @@
+![Do Not Run](https://img.shields.io/badge/DO_NOT-RUN-red)
 ### Note*
 the following is strictly conceptual, the code was never intended to be compile, compilation requires specialized enviroment
 
