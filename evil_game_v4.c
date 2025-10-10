@@ -206,7 +206,7 @@ void game() {
 
 	int rps = play - robot;
 	printf("robot chose %s\n", dict[robot]);
-	if (rps = 1 || rps == -2) {
+	if (rps == 1 || rps == -2) {
         printf("you won!\n");
         safe();
     } else {
